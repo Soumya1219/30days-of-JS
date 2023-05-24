@@ -1,40 +1,20 @@
-
-name: Add Contributors to README
-
+name: Add Contributors
 on:
   push:
     branches:
-      - main
-
+      - master
 jobs:
-  update-readme:
+  add-contributors:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/node
+          key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - run: npm install -g @actions/github-script
+      - run: github-script run add-contributors.js
 
-      - name: Update README
-        run: |
-          CONTRIBUTORS=$(git log --format='%an' | sort -u)
-          PREVIOUS_CONTRIBUTORS=$(grep -oP '(?<=\* )\w+' README.md)
-          
-          for contributor in $CONTRIBUTORS; do
-            if ! grep -q "$contributor" README.md; then
-              echo "* $contributor" >> README.md
-            fi
-          done
-          
-          for contributor in $PREVIOUS_CONTRIBUTORS; do
-            if ! grep -q "$contributor" README.md; then
-              sed -i "/\* $contributor/d" README.md
-            fi
-          done
-
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md
-          git commit -m "Update contributors in README"
-          git push
