@@ -1,0 +1,40 @@
+
+name: Add Contributors to README
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Update README
+        run: |
+          CONTRIBUTORS=$(git log --format='%an' | sort -u)
+          PREVIOUS_CONTRIBUTORS=$(grep -oP '(?<=\* )\w+' README.md)
+          
+          for contributor in $CONTRIBUTORS; do
+            if ! grep -q "$contributor" README.md; then
+              echo "* $contributor" >> README.md
+            fi
+          done
+          
+          for contributor in $PREVIOUS_CONTRIBUTORS; do
+            if ! grep -q "$contributor" README.md; then
+              sed -i "/\* $contributor/d" README.md
+            fi
+          done
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "Update contributors in README"
+          git push
